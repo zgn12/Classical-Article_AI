@@ -109,6 +109,35 @@ class UEncoder(nn.Module):
         return nn.functional.relu(conv_bn + self.conv_bn0(input))
     
 
+# create_mse() 函数
+class Mse(nn.Module):
+    def __init__(self, filter, kernel_size, dilation_rates, pre_name='',
+                 idx=0, padding='same', activation='relu'):
+        super(Mse, self).__init__()
+        
+        l_name = f"{pre_name}_mse{idx}"
+        self.convs = nn.ModuleList([create_bn_conv(input, filter, kernel_size,
+                                                    dilation_rate=dr, pre_name=l_name, idx=i + 1,
+                                                    padding=padding, activation=activation) for i, dr in enumerate(dilation_rates)])
+        
+        con_conv = torch.cat(self.convs, dim=1)
+        down = create_bn_conv(con_conv, filter * 2, kernel_size, dilation_rate=1,
+                              pre_name=l_name, idx=len(dilation_rates) + 1,
+                              padding=padding, activation=activation)
+        down = create_bn_conv(down, filter, kernel_size, dilation_rate=1,
+                              pre_name=l_name, idx=len(dilation_rates) + 2,
+                              padding=padding, activation=activation)
+        self.out = create_bn_conv(down, filter, kernel_size, dilation_rate=1,
+                                  pre_name=l_name, idx=len(dilation_rates) + 3,
+                                  padding=padding, activation=None)
+        
+    def forward(self, input):
+        convs = [conv(input) for conv in self.convs]
+        con_conv = torch.cat(convs, dim=1)
+        down = self.out(conv)
+        return F.relu(down + input)
+
+
 ### demo案例
 """
 在 forward 方法中，我们按照SalientSleepNet模型结构的顺序调用每一层模块，并将上一层模块的输出作为输入传递给下一层模块。
