@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package node;
+
+service NodeService {
+  rpc ForwardRequest (NodeRequest) returns (NodeReply) {}
+}
+
+message NodeRequest {
+  int32 node_number = 1;
+  // Add any other fields you need to forward to the node.
+}
+
+message NodeReply {
+  string response = 1;
+  // Add any other fields you need to return to the client.
+}
